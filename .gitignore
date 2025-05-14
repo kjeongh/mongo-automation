@@ -1,0 +1,22 @@
+terraform.tfstate.*
+terraform.tfstate
+
+crash.log
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+
+# Ansible
+# *.retry
+# .ansible/
+# host_vars/
+# group_vars/
+
+# SSH keys
+# *.pem
+# *.key
+# id_rsa
+# id_rsa.pub
+
+# Editor/OS
+.DS_Store

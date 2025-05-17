@@ -8,16 +8,35 @@ terraform {
   }
 }
 
+# 변수 정의
+variable "project_id" {}
+variable "region" {}
+variable "zone_a" {}
+variable "zone_b" {}
+variable "zone_c" {}
+
+variable "vpc_name" {}
+variable "subnet_a_cidr" {}
+variable "subnet_b_cidr" {}
+variable "subnet_c_cidr" {}
+
+variable "machine_type" {}
+variable "image" {}
+variable "ssh_key_path" {}
+
+variable "allowed_ports" {}
+variable "source_ranges" {}
+
 # 최신 버전의 google provider사용
 provider "google" {
   project = var.project_id
-  region  = "asia-northeast3"
-  zone    = "asia-northeast3-a"
+  region  = var.region
+  zone    = var.zone_a
 }
 
 # VPC 생성
 resource "google_compute_network" "vpc_network" {
-  name = "terraform-network"
+  name = var.vpc_name
 }
 
 ######
@@ -26,22 +45,22 @@ resource "google_compute_network" "vpc_network" {
 ######
 resource "google_compute_subnetwork" "subnet-a" {
   name          = "subnet-a"
-  ip_cidr_range = "10.10.1.0/24"
-  region        = "asia-northeast3"
+  ip_cidr_range = var.subnet_a_cidr
+  region        = var.region
   network       = google_compute_network.vpc_network.id
 }
 
 resource "google_compute_subnetwork" "subnet-b" {
   name          = "subnet-b"
-  ip_cidr_range = "10.10.2.0/24"
-  region        = "asia-northeast3"
+  ip_cidr_range = var.subnet_b_cidr
+  region        = var.region
   network       = google_compute_network.vpc_network.id
 }
 
 resource "google_compute_subnetwork" "subnet-c" {
   name          = "subnet-c"
-  ip_cidr_range = "10.10.3.0/24"
-  region        = "asia-northeast3"
+  ip_cidr_range = var.subnet_c_cidr
+  region        = var.region
   network       = google_compute_network.vpc_network.id
 }
 
@@ -54,10 +73,10 @@ resource "google_compute_firewall" "mongodb" {
 
   allow {
     protocol = "tcp"
-    ports    = ["27017"]
+    ports    = var.allowed_ports
   }
 
-  source_ranges = ["0.0.0.0/0"] # 테스트용
+  source_ranges = var.source_ranges
 }
 
 ######
@@ -69,12 +88,12 @@ resource "google_compute_firewall" "mongodb" {
 # MongoDB 1번 인스턴스 생성
 resource "google_compute_instance" "mongodb-1" {
   name         = "mongodb-1"
-  machine_type = "e2-medium"
-  zone         = "asia-northeast3-a"
+  machine_type = var.machine_type
+  zone         = var.zone_a
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2004-lts"
+      image = var.image
     }
   }
 
@@ -85,19 +104,19 @@ resource "google_compute_instance" "mongodb-1" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${file("~/.ssh/id_rsa.pub")}"
+    ssh-keys = "ubuntu:${file(var.ssh_key_path)}"
   }
 }
 
 # MongoDB 2번 인스턴스 생성
 resource "google_compute_instance" "mongodb-2" {
   name         = "mongodb-2"
-  machine_type = "e2-medium"
-  zone         = "asia-northeast3-b"
+  machine_type = var.machine_type
+  zone         = var.zone_b
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2004-lts"
+      image = var.image
     }
   }
 
@@ -108,19 +127,19 @@ resource "google_compute_instance" "mongodb-2" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${file("~/.ssh/id_rsa.pub")}"
+    ssh-keys = "ubuntu:${file(var.ssh_key_path)}"
   }
 }
 
 # MongoDB 3번 인스턴스 생성
 resource "google_compute_instance" "mongodb-3" {
   name         = "mongodb-3"
-  machine_type = "e2-medium"
-  zone         = "asia-northeast3-c"
+  machine_type = var.machine_type
+  zone         = var.zone_c
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2004-lts"
+      image = var.image
     }
   }
 
@@ -131,7 +150,7 @@ resource "google_compute_instance" "mongodb-3" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${file("~/.ssh/id_rsa.pub")}"
+    ssh-keys = "ubuntu:${file(var.ssh_key_path)}"
   }
 }
 

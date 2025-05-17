@@ -1,0 +1,90 @@
+- name: Install and configure MongoDB 7.x ReplicaSet
+  hosts: mongodb
+  become: yes
+  vars:
+    replica_set_name: {{ replica_set_name }}
+  tasks:
+    - name: Remove old MongoDB (if exists)
+      apt:
+        name: mongodb
+        state: absent
+      ignore_errors: yes
+
+    - name: Download public GPG key
+      ansible.builtin.shell: |
+        curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+      args:
+        creates: /usr/share/keyrings/mongodb-server-7.0.gpg
+
+    - name: Add MongoDB 7.x repository
+      ansible.builtin.apt_repository:
+        repo: 'deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu {{ ansible_distribution_release }}/mongodb-org/7.0 multiverse'
+        state: present
+        filename: 'mongodb-org-7.0'
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install MongoDB(7.0.18)
+      ansible.builtin.apt:
+        name:
+          - mongodb-org=7.0.18
+          - mongodb-org-database=7.0.18
+          - mongodb-org-server=7.0.18
+          - mongodb-mongosh
+          - mongodb-org-shell=7.0.18
+          - mongodb-org-mongos=7.0.18
+          - mongodb-org-tools=7.0.18
+          - mongodb-org-database-tools-extra=7.0.18
+        state: present
+        update_cache: yes
+      register: mongodb_install
+
+    - name: Hold MongoDB packages version
+      ansible.builtin.command: "echo '{{ item }} hold' | dpkg --set-selections"
+      loop:
+        - mongodb-org
+        - mongodb-org-database
+        - mongodb-org-server
+        - mongodb-mongosh
+        - mongodb-org-shell
+        - mongodb-org-mongos
+        - mongodb-org-tools
+        - mongodb-org-database-tools-extra
+      when: mongodb_install is changed
+
+    - name: Ensure mongod is running
+      service:
+        name: mongod
+        state: started
+        enabled: yes
+
+    - name: Copy mongod.conf
+      template:
+        src: ./template/mongod.conf.j2
+        dest: /etc/mongod.conf
+
+    - name: Restart mongod service
+      service:
+        name: mongod
+        state: restarted
+
+- name: Initiate ReplicaSet
+  hosts: primary
+  become: yes
+  tasks:
+    - name: Initiate ReplicaSet
+      shell: |
+        mongosh --eval '
+          rs.initiate({
+            _id: "{{ replica_set_name }}",
+            members: [
+              {% for host in groups["mongodb"] %}
+              { _id: {{ loop.index0 }}, host: "{{ host }}:27017" }{{ "," if not loop.last else "" }}
+              {% endfor %}
+            ]
+          })
+        '
+      args:
+        executable: /bin/bash

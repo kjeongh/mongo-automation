@@ -1,5 +1,6 @@
 import { Header } from '@/components/Header'
 import { ClusterCreationCard } from '@/components/ClusterCreationCard'
+import { AnimatedTitle } from '@/components/AnimatedTitle'
 
 export function HomePage() {
   return (
@@ -10,10 +11,8 @@ export function HomePage() {
       <section className="bg-white py-24">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Main Title */}
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 text-primary">
-              MongoCraft
-            </h1>
+            {/* Animated Main Title */}
+            <AnimatedTitle />
             
             {/* Subtitle */}
             <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-12 leading-relaxed">

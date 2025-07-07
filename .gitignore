@@ -20,3 +20,7 @@ terraform.tfvars
 
 # Editor/OS
 .DS_Store
+
+# AI
+CLAUDE.md
+.claude/*

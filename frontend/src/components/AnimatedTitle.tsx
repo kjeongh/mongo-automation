@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const words = ['구축', '관리', '배포', '운영', '최적화']
+const words = ['Deploy', 'Monitoring', 'Optimize', 'Backup', 'Security']
 
 export function AnimatedTitle() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
@@ -20,17 +20,19 @@ export function AnimatedTitle() {
   }, [])
 
   return (
-    <h1 className="text-6xl md:text-7xl font-bold mb-6 text-primary">
-      MongoDB 클러스터{' '}
-      <span className={`inline-block transition-all duration-300 ${
-        isVisible 
-          ? 'opacity-100 transform translate-y-0' 
-          : 'opacity-0 transform -translate-y-2'
-      }`}>
-        <span className="text-secondary">{words[currentWordIndex]}</span>
-      </span>
+    <h1 className="text-6xl md:text-7xl mb-6 text-left ml-8 md:ml-16">
+      <span className="font-bold text-primary text-8xl md:text-7xl">MongoCraft:</span>
       <br />
-      플랫폼 MongoCraft
+      <span className="font-light text-gray-700 text-3xl md:text-4xl">Automated MongoDB Management for</span>{' '}
+      <span className="inline-block px-4 py-1 rounded-xl border-2 border-gray-300 transition-all duration-300">
+        <span className={`text-secondary text-4xl md:text-5xl transition-all duration-300 ${
+          isVisible 
+            ? 'opacity-100 transform translate-y-0' 
+            : 'opacity-0 transform -translate-y-2'
+        }`}>
+          {words[currentWordIndex]}
+        </span>
+      </span>
     </h1>
   )
 }

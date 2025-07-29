@@ -1,4 +1,6 @@
-# terraform provider 설정 - google provider
+# MongoDB Cluster Infrastructure - Base Network Resources
+# 기본 네트워크 인프라만 관리 (인스턴스는 mongodb-cluster.tf에서 관리)
+
 terraform {
   required_providers {
     google = {
@@ -8,46 +10,32 @@ terraform {
   }
 }
 
-# 변수 정의
-variable "project_id" {}
-variable "region" {}
-variable "zone_a" {}
-variable "zone_b" {}
-variable "zone_c" {}
-
-variable "vpc_name" {}
-variable "subnet_a_cidr" {}
-variable "subnet_b_cidr" {}
-variable "subnet_c_cidr" {}
-
-variable "machine_type" {}
-variable "image" {}
-variable "ssh_key_path" {}
-
-variable "allowed_ports" {}
-variable "source_ranges" {}
-
-# 최신 버전의 google provider사용
+# Google Provider 설정
 provider "google" {
   project = var.project_id
   region  = var.region
   zone    = var.zone_a
 }
 
-# VPC 생성
+######
+# VPC 네트워크 생성
+######
 resource "google_compute_network" "vpc_network" {
-  name = var.vpc_name
+  name                    = var.vpc_name
+  auto_create_subnetworks = false
+  description            = "VPC network for MongoDB cluster"
 }
 
 ######
-# 서브넷 생성
-# 동일 리전 내, 서로 다른 AZ에 배치
+# 기본 서브넷들 생성 (호환성 유지용)
+# Note: 모듈 기반 배포에서는 각 컴포넌트별 전용 서브넷을 자동 생성
 ######
 resource "google_compute_subnetwork" "subnet-a" {
   name          = "subnet-a"
   ip_cidr_range = var.subnet_a_cidr
   region        = var.region
   network       = google_compute_network.vpc_network.id
+  description   = "Legacy subnet for zone A"
 }
 
 resource "google_compute_subnetwork" "subnet-b" {
@@ -55,6 +43,7 @@ resource "google_compute_subnetwork" "subnet-b" {
   ip_cidr_range = var.subnet_b_cidr
   region        = var.region
   network       = google_compute_network.vpc_network.id
+  description   = "Legacy subnet for zone B"
 }
 
 resource "google_compute_subnetwork" "subnet-c" {
@@ -62,14 +51,17 @@ resource "google_compute_subnetwork" "subnet-c" {
   ip_cidr_range = var.subnet_c_cidr
   region        = var.region
   network       = google_compute_network.vpc_network.id
+  description   = "Legacy subnet for zone C"
 }
 
 ######
-# 방화벽 규칙 설정
+# 기본 방화벽 규칙 (범용)
 ######
-resource "google_compute_firewall" "mongodb" {
-  name    = "allow-mongodb"
+resource "google_compute_firewall" "mongodb-general" {
+  name    = "allow-mongodb-general"
   network = google_compute_network.vpc_network.name
+  
+  description = "General MongoDB and SSH access"
 
   allow {
     protocol = "tcp"
@@ -77,92 +69,56 @@ resource "google_compute_firewall" "mongodb" {
   }
 
   source_ranges = var.source_ranges
+  target_tags   = ["mongodb"]
 }
 
 ######
-# VM 생성 및 네트워크 구성
-# Ubuntu 20.04 LTS
-# 각 서브넷에 배치
+# SSH 접근을 위한 방화벽 규칙
 ######
+resource "google_compute_firewall" "allow-ssh" {
+  name    = "allow-ssh"
+  network = google_compute_network.vpc_network.name
+  
+  description = "Allow SSH access to all instances"
 
-# MongoDB 1번 인스턴스 생성
-resource "google_compute_instance" "mongodb-1" {
-  name         = "mongodb-1"
-  machine_type = var.machine_type
-  zone         = var.zone_a
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
 
-  boot_disk {
-    initialize_params {
-      image = var.image
+  source_ranges = var.source_ranges
+  target_tags   = ["mongodb", "config-server", "shard-server", "router"]
+}
+
+######
+# 기본 출력값들 (네트워크 정보)
+######
+output "vpc_network" {
+  description = "VPC network information"
+  value = {
+    id   = google_compute_network.vpc_network.id
+    name = google_compute_network.vpc_network.name
+    self_link = google_compute_network.vpc_network.self_link
+  }
+}
+
+output "subnets" {
+  description = "Created subnets information"
+  value = {
+    subnet_a = {
+      id   = google_compute_subnetwork.subnet-a.id
+      name = google_compute_subnetwork.subnet-a.name
+      cidr = google_compute_subnetwork.subnet-a.ip_cidr_range
+    }
+    subnet_b = {
+      id   = google_compute_subnetwork.subnet-b.id
+      name = google_compute_subnetwork.subnet-b.name
+      cidr = google_compute_subnetwork.subnet-b.ip_cidr_range
+    }
+    subnet_c = {
+      id   = google_compute_subnetwork.subnet-c.id
+      name = google_compute_subnetwork.subnet-c.name
+      cidr = google_compute_subnetwork.subnet-c.ip_cidr_range
     }
   }
-
-  network_interface {
-    network    = google_compute_network.vpc_network.id
-    subnetwork = google_compute_subnetwork.subnet-a.id
-    access_config {}
-  }
-
-  metadata = {
-    ssh-keys = "ubuntu:${file(var.ssh_key_path)}"
-  }
 }
-
-# MongoDB 2번 인스턴스 생성
-resource "google_compute_instance" "mongodb-2" {
-  name         = "mongodb-2"
-  machine_type = var.machine_type
-  zone         = var.zone_b
-
-  boot_disk {
-    initialize_params {
-      image = var.image
-    }
-  }
-
-  network_interface {
-    network    = google_compute_network.vpc_network.id
-    subnetwork = google_compute_subnetwork.subnet-b.id
-    access_config {}
-  }
-
-  metadata = {
-    ssh-keys = "ubuntu:${file(var.ssh_key_path)}"
-  }
-}
-
-# MongoDB 3번 인스턴스 생성
-resource "google_compute_instance" "mongodb-3" {
-  name         = "mongodb-3"
-  machine_type = var.machine_type
-  zone         = var.zone_c
-
-  boot_disk {
-    initialize_params {
-      image = var.image
-    }
-  }
-
-  network_interface {
-    network    = google_compute_network.vpc_network.id
-    subnetwork = google_compute_subnetwork.subnet-c.id
-    access_config {}
-  }
-
-  metadata = {
-    ssh-keys = "ubuntu:${file(var.ssh_key_path)}"
-  }
-}
-
-######
-# OUTPUT 정의
-# 퍼블릭IP 출력 (각 노드의 IP를 Ansible에서 알기 위함)
-######
-output "mongo_instance_ips" {
-  value = [
-    google_compute_instance.mongodb-1.network_interface[0].access_config[0].nat_ip, # NAT IP
-    google_compute_instance.mongodb-2.network_interface[0].access_config[0].nat_ip,
-    google_compute_instance.mongodb-3.network_interface[0].access_config[0].nat_ip
-  ]
-}
-

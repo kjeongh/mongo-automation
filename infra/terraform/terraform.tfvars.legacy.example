@@ -1,0 +1,41 @@
+# Legacy Terraform Variables (for main.tf network resources only)
+# NOTE: This is DEPRECATED. Use terraform.tfvars.cluster.example for full MongoDB cluster deployment
+
+######
+# GCP Project Configuration
+######
+project_id = "your-gcp-project-id"
+region     = "asia-northeast3"  # Seoul region
+
+# Availability Zones
+zone_a = "asia-northeast3-a"
+zone_b = "asia-northeast3-b"  
+zone_c = "asia-northeast3-c"
+
+######
+# Network Configuration
+######
+vpc_name        = "mongodb-vpc"
+subnet_a_cidr   = "10.0.1.0/24"
+subnet_b_cidr   = "10.0.2.0/24"
+subnet_c_cidr   = "10.0.3.0/24"
+
+######
+# VM Configuration (Legacy - not used in modular approach)
+######
+machine_type = "e2-medium"
+image        = "ubuntu-os-cloud/ubuntu-2004-lts"
+ssh_key_path = "~/.ssh/id_rsa.pub"
+
+######
+# Firewall Configuration
+######
+allowed_ports = ["22", "27017", "27018", "27019"]
+source_ranges = ["0.0.0.0/0"]  # Restrict this in production
+
+######
+# IMPORTANT NOTICE
+######
+# This configuration only creates base network resources (VPC, subnets, firewall).
+# For full MongoDB cluster deployment, use:
+#   cp terraform.tfvars.cluster.example terraform.tfvars

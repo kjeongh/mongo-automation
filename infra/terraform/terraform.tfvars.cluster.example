@@ -1,0 +1,165 @@
+# MongoDB Cluster Terraform Variables - Modular Configuration
+# Copy this file to terraform.tfvars and customize the values
+
+######
+# GCP Project Configuration
+######
+project_id = "your-gcp-project-id"
+region     = "asia-northeast3"  # Seoul region
+
+# Availability Zones
+zone_a = "asia-northeast3-a"
+zone_b = "asia-northeast3-b"  
+zone_c = "asia-northeast3-c"
+
+######
+# Network Configuration
+######
+vpc_name        = "mongodb-cluster-vpc"
+subnet_a_cidr   = "10.0.1.0/24"  # 기존 호환성용
+subnet_b_cidr   = "10.0.2.0/24"
+subnet_c_cidr   = "10.0.3.0/24"
+
+######
+# Basic VM Configuration
+######
+machine_type = "e2-medium"          # 기본값
+image        = "ubuntu-os-cloud/ubuntu-2004-lts"
+ssh_key_path = "~/.ssh/id_rsa.pub"
+
+######
+# Firewall Configuration
+######
+allowed_ports = ["22", "27016", "27017", "27019"]
+source_ranges = ["YOUR_IP/32"]  # 보안을 위해 실제 IP로 변경 필요
+
+######
+# MongoDB Cluster Configuration
+######
+shard_count  = 3  # 샤드 개수 (각 샤드당 3개 인스턴스)
+router_count = 2  # Router (mongos) 개수
+
+######
+# Config Server Configuration
+######
+config_server_machine_type           = "e2-medium"
+config_server_disk_size             = 20
+config_server_disk_type             = "pd-ssd"
+config_server_subnet_cidr           = "10.0.10.0/24"
+config_server_allow_external_access = false
+
+######
+# Shard Server Configuration
+######
+shard_server_machine_type           = "e2-standard-4"
+shard_server_disk_size             = 100
+shard_server_disk_type             = "pd-ssd" 
+shard_server_subnet_cidr           = "10.0.20.0/24"
+shard_server_allow_external_access = false
+
+######
+# Router (mongos) Configuration
+######
+router_machine_type           = "e2-standard-2"
+router_disk_size             = 20
+router_disk_type             = "pd-ssd"
+router_subnet_cidr           = "10.0.30.0/24"
+router_allow_external_access = true  # 애플리케이션 접근용
+
+######
+# MongoDB Settings
+######
+mongodb_version = "8.0"
+
+# Replica Set 설정
+replica_set_config = {
+  primary_priority   = 2
+  secondary_priority = 1
+  arbiter_priority   = 0
+}
+
+######
+# Environment & Labeling
+######
+environment  = "production"
+project_name = "mongodb-cluster-automation"
+team         = "devops"
+
+additional_tags = ["production", "critical"]
+
+additional_labels = {
+  project     = "mongodb-automation"
+  cost-center = "engineering"
+  owner       = "devops-team"
+}
+
+######
+# Backup & Monitoring
+######
+enable_backup         = true
+backup_retention_days = 30
+enable_monitoring     = true
+
+monitoring_config = {
+  prometheus_port = 9090
+  grafana_port   = 3000
+  alert_email    = "devops@yourcompany.com"
+}
+
+######
+# Security Settings
+######
+enable_ssl  = true
+enable_auth = true
+
+# Note: keyfile_content는 보안상 별도 관리 (Terraform Cloud, Vault 등)
+# keyfile_content = "base64_encoded_keyfile_content"
+
+######
+# Performance Tuning
+######
+wiredtiger_cache_size_gb = 0  # 0 = auto (메모리의 50%)
+enable_compression       = true
+compression_algorithm    = "snappy"
+
+######
+# Maintenance
+######
+maintenance_window = {
+  day_of_week = "sunday"
+  hour        = 2
+  minute      = 0
+}
+
+######
+# Auto Scaling (Future Use)
+######
+auto_scaling_config = {
+  enabled     = false
+  min_nodes   = 3
+  max_nodes   = 9
+  cpu_target  = 70
+}
+
+######
+# Custom Configuration
+######
+# custom_startup_script = file("scripts/custom-mongodb-setup.sh")
+
+######
+# Development/Testing Overrides
+######
+# 개발/테스트 환경에서는 다음 값들을 조정하세요:
+#
+# For Development:
+# config_server_machine_type = "e2-micro"
+# shard_server_machine_type  = "e2-small" 
+# router_machine_type        = "e2-micro"
+# shard_count               = 1
+# enable_backup             = false
+#
+# For Testing:
+# config_server_machine_type = "e2-small"
+# shard_server_machine_type  = "e2-medium"
+# router_machine_type        = "e2-small"
+# shard_count               = 2

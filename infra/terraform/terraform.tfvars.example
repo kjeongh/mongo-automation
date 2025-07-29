@@ -1,0 +1,127 @@
+# MongoDB Cluster Terraform Variables - MAIN CONFIGURATION
+# Copy this file to terraform.tfvars and customize the values
+
+######
+# GCP Project Configuration
+######
+project_id = "your-gcp-project-id"
+region     = "asia-northeast3"  # Seoul region
+
+# Availability Zones
+zone_a = "asia-northeast3-a"
+zone_b = "asia-northeast3-b"  
+zone_c = "asia-northeast3-c"
+
+######
+# Network Configuration
+######
+vpc_name        = "mongodb-cluster-vpc"
+subnet_a_cidr   = "10.0.1.0/24"  # Legacy subnets (compatibility)
+subnet_b_cidr   = "10.0.2.0/24"
+subnet_c_cidr   = "10.0.3.0/24"
+
+######
+# Basic VM Configuration
+######
+machine_type = "e2-medium"          # Default for legacy resources
+image        = "ubuntu-os-cloud/ubuntu-2004-lts"
+ssh_key_path = "~/.ssh/id_rsa.pub"
+
+######
+# Firewall Configuration
+######
+allowed_ports = ["22", "27016", "27017", "27019"]
+source_ranges = ["YOUR_IP/32"]  # CHANGE THIS! Use your actual IP for security
+
+######
+# MongoDB Cluster Configuration
+######
+shard_count  = 3  # Number of shards (each shard = 3 instances)
+router_count = 2  # Number of MongoDB routers (mongos)
+
+######
+# Config Server Configuration
+######
+config_server_machine_type           = "e2-medium"
+config_server_disk_size             = 20
+config_server_disk_type             = "pd-ssd"
+config_server_subnet_cidr           = "10.0.10.0/24"
+config_server_allow_external_access = false
+
+######
+# Shard Server Configuration
+######
+shard_server_machine_type           = "e2-standard-4"
+shard_server_disk_size             = 100
+shard_server_disk_type             = "pd-ssd" 
+shard_server_subnet_cidr           = "10.0.20.0/24"
+shard_server_allow_external_access = false
+
+######
+# Router (mongos) Configuration
+######
+router_machine_type           = "e2-standard-2"
+router_disk_size             = 20
+router_disk_type             = "pd-ssd"
+router_subnet_cidr           = "10.0.30.0/24"
+router_allow_external_access = true  # Applications connect here
+
+######
+# MongoDB Settings
+######
+mongodb_version = "8.0"
+
+replica_set_config = {
+  primary_priority   = 2
+  secondary_priority = 1
+  arbiter_priority   = 0
+}
+
+######
+# Environment & Labeling
+######
+environment  = "production"
+project_name = "mongodb-cluster"
+team         = "devops"
+
+additional_tags = ["production", "mongodb"]
+
+additional_labels = {
+  managed-by = "terraform"
+  project    = "mongodb-automation"
+}
+
+######
+# Backup & Monitoring
+######
+enable_backup         = true
+backup_retention_days = 30
+enable_monitoring     = true
+
+monitoring_config = {
+  prometheus_port = 9090
+  grafana_port   = 3000
+  alert_email    = "admin@yourcompany.com"
+}
+
+######
+# Security Settings
+######
+enable_ssl  = true
+enable_auth = true
+
+######
+# Performance Tuning
+######
+wiredtiger_cache_size_gb = 0  # 0 = auto (50% of memory)
+enable_compression       = true
+compression_algorithm    = "snappy"
+
+######
+# Quick Start Guide
+######
+# 1. Copy this file: cp terraform.tfvars.example terraform.tfvars
+# 2. Change 'project_id' to your GCP project ID
+# 3. Change 'source_ranges' to your IP address
+# 4. Change 'ssh_key_path' to your SSH public key
+# 5. Run: terraform init && terraform apply

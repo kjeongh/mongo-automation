@@ -1,0 +1,76 @@
+# MongoDB Config Server Terraform Variables
+# Copy this file to terraform.tfvars and customize the values
+
+######
+# GCP Project Configuration
+######
+project_id = "your-gcp-project-id"
+region     = "asia-northeast3"  # Seoul region
+
+# Availability Zones (기본 MongoDB 노드용)
+zone_a = "asia-northeast3-a"
+zone_b = "asia-northeast3-b"  
+zone_c = "asia-northeast3-c"
+
+######
+# Network Configuration
+######
+vpc_name        = "mongodb-vpc"
+subnet_a_cidr   = "10.0.1.0/24"  # 일반 MongoDB 노드용
+subnet_b_cidr   = "10.0.2.0/24"
+subnet_c_cidr   = "10.0.3.0/24"
+
+######
+# VM Configuration (일반 MongoDB용)
+######
+machine_type = "e2-medium"
+image        = "ubuntu-os-cloud/ubuntu-2004-lts"
+ssh_key_path = "~/.ssh/id_rsa.pub"
+
+######
+# Firewall Configuration
+######
+allowed_ports = ["22", "27017", "27018", "27019"]
+source_ranges = ["0.0.0.0/0"]  # 프로덕션에서는 제한 필요
+
+######
+# Config Server Specific Configuration
+######
+# Note: Config servers will be automatically distributed across zone_a, zone_b, zone_c
+
+# Config Server 전용 서브넷
+config_server_subnet_cidr = "10.0.10.0/24"
+
+# Config Server VM 사양
+config_server_machine_type = "e2-medium"
+config_server_disk_size    = 20
+config_server_disk_type    = "pd-ssd"
+
+# Config Server 네트워크 설정
+config_server_port = 27019
+config_server_allow_external_access = true
+config_server_allowed_source_ranges = [
+  "10.0.0.0/8",      # 내부 네트워크
+  "your.ip.here/32"  # 관리자 IP (실제 IP로 변경 필요)
+]
+
+# Config Server MongoDB 설정
+config_server_replica_set_name = "csRS"
+config_server_mongodb_version  = "8.0"
+
+# Config Server 라벨 및 태그
+config_server_labels = {
+  environment = "production"
+  role        = "config-server"
+  managed-by  = "terraform"
+  team        = "devops"
+}
+
+config_server_tags = ["config-server", "mongodb", "production"]
+
+# Config Server 추가 기능
+config_server_enable_docker     = true
+config_server_enable_monitoring = true
+
+# 사용자 정의 시작 스크립트 (선택사항)
+# config_server_startup_script_path = "/path/to/custom-startup-script.sh"

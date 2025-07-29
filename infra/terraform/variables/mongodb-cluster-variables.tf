@@ -1,87 +1,7 @@
-# MongoDB Cluster Terraform Variables
-# All variables for MongoDB cluster deployment
+# MongoDB Cluster Variables for Modular Approach
 
 ######
-# GCP 기본 설정
-######
-variable "project_id" {
-  description = "GCP project ID"
-  type        = string
-}
-
-variable "region" {
-  description = "GCP region"
-  type        = string
-}
-
-variable "zone_a" {
-  description = "First availability zone"
-  type        = string
-}
-
-variable "zone_b" {
-  description = "Second availability zone"
-  type        = string
-}
-
-variable "zone_c" {
-  description = "Third availability zone"
-  type        = string
-}
-
-######
-# 네트워크 설정
-######
-variable "vpc_name" {
-  description = "Name of the VPC network"
-  type        = string
-}
-
-variable "subnet_a_cidr" {
-  description = "CIDR block for subnet A (legacy)"
-  type        = string
-}
-
-variable "subnet_b_cidr" {
-  description = "CIDR block for subnet B (legacy)"
-  type        = string
-}
-
-variable "subnet_c_cidr" {
-  description = "CIDR block for subnet C (legacy)"
-  type        = string
-}
-
-variable "allowed_ports" {
-  description = "List of allowed ports in firewall"
-  type        = list(string)
-}
-
-variable "source_ranges" {
-  description = "Source IP ranges for firewall rules"
-  type        = list(string)
-}
-
-######
-# 기본 VM 설정 (레거시 호환성)
-######
-variable "machine_type" {
-  description = "Default machine type"
-  type        = string
-}
-
-variable "image" {
-  description = "VM image to use"
-  type        = string
-}
-
-variable "ssh_key_path" {
-  description = "Path to SSH public key file"
-  type        = string
-}
-
-######
-# MongoDB 클러스터 구성
+# 클러스터 구성 변수
 ######
 variable "shard_count" {
   description = "Number of shards to create"
@@ -106,7 +26,7 @@ variable "router_count" {
 }
 
 ######
-# Config Server 설정
+# Config Server 변수
 ######
 variable "config_server_machine_type" {
   description = "Machine type for config servers"
@@ -139,7 +59,7 @@ variable "config_server_allow_external_access" {
 }
 
 ######
-# Shard Server 설정
+# Shard Server 변수
 ######
 variable "shard_server_machine_type" {
   description = "Machine type for shard servers"
@@ -172,7 +92,7 @@ variable "shard_server_allow_external_access" {
 }
 
 ######
-# Router (mongos) 설정
+# Router (mongos) 변수
 ######
 variable "router_machine_type" {
   description = "Machine type for MongoDB routers"
@@ -205,7 +125,7 @@ variable "router_allow_external_access" {
 }
 
 ######
-# MongoDB 설정
+# MongoDB 설정 변수
 ######
 variable "mongodb_version" {
   description = "MongoDB version to use"
@@ -233,12 +153,17 @@ variable "replica_set_config" {
 }
 
 ######
-# 환경 및 라벨링
+# 환경 및 라벨링 변수
 ######
 variable "environment" {
-  description = "Environment name"
+  description = "Environment name (dev, staging, prod)"
   type        = string
   default     = "production"
+  
+  validation {
+    condition = contains(["dev", "development", "staging", "prod", "production"], var.environment)
+    error_message = "Environment must be one of: dev, development, staging, prod, production."
+  }
 }
 
 variable "project_name" {
@@ -254,19 +179,19 @@ variable "team" {
 }
 
 variable "additional_tags" {
-  description = "Additional network tags"
+  description = "Additional network tags to apply to all instances"
   type        = list(string)
   default     = []
 }
 
 variable "additional_labels" {
-  description = "Additional labels"
+  description = "Additional labels to apply to all instances"
   type        = map(string)
   default     = {}
 }
 
 ######
-# 백업 및 모니터링
+# 백업 및 모니터링 변수
 ######
 variable "enable_backup" {
   description = "Whether to enable automated backups"
@@ -301,12 +226,18 @@ variable "monitoring_config" {
 }
 
 ######
-# 보안 설정
+# 보안 변수
 ######
 variable "enable_ssl" {
   description = "Whether to enable SSL/TLS encryption"
   type        = bool
   default     = true
+}
+
+variable "ssl_cert_path" {
+  description = "Path to SSL certificate file"
+  type        = string
+  default     = ""
 }
 
 variable "enable_auth" {
@@ -323,7 +254,7 @@ variable "keyfile_content" {
 }
 
 ######
-# 성능 튜닝
+# 성능 튜닝 변수
 ######
 variable "wiredtiger_cache_size_gb" {
   description = "WiredTiger cache size in GB (0 = auto)"
@@ -345,5 +276,44 @@ variable "compression_algorithm" {
   validation {
     condition = contains(["snappy", "lz4", "zstd", "none"], var.compression_algorithm)
     error_message = "Compression algorithm must be one of: snappy, lz4, zstd, none."
+  }
+}
+
+######
+# 고급 설정 변수
+######
+variable "custom_startup_script" {
+  description = "Custom startup script for MongoDB instances"
+  type        = string
+  default     = ""
+}
+
+variable "maintenance_window" {
+  description = "Maintenance window configuration"
+  type = object({
+    day_of_week = string
+    hour        = number
+    minute      = number
+  })
+  default = {
+    day_of_week = "sunday"
+    hour        = 2
+    minute      = 0
+  }
+}
+
+variable "auto_scaling_config" {
+  description = "Auto scaling configuration for future use"
+  type = object({
+    enabled     = bool
+    min_nodes   = number
+    max_nodes   = number
+    cpu_target  = number
+  })
+  default = {
+    enabled     = false
+    min_nodes   = 3
+    max_nodes   = 9
+    cpu_target  = 70
   }
 }
